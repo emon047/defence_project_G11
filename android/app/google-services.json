@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "31525880052",
+    "project_id": "memoaura",
+    "storage_bucket": "memoaura.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:31525880052:android:22b98a76b3638f3198dea1",
+        "android_client_info": {
+          "package_name": "com.example.memoaura"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM4GnnFiO_CqhzwXmw2kVmydzRNcr9r_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
