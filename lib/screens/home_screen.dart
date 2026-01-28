@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Add this
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/theme.dart';
 import 'add_memory_page.dart';
 import 'memory_page.dart'; 
@@ -10,15 +11,14 @@ import 'timeline_page.dart';
 import 'weather_mood_page.dart';
 import 'goodnight_reflection_page.dart';
 import 'memory_map_page.dart'; 
+import 'profile_page.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 1. Grab the currently logged-in user from Firebase
     final user = FirebaseAuth.instance.currentUser;
-    // Get the name from email (e.g., "alex@gmail.com" becomes "Alex")
     final displayName = user?.email?.split('@')[0] ?? "Explorer";
 
     return Scaffold(
@@ -37,7 +37,7 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(displayName), // Pass the real name here
+                _buildHeader(displayName, context),
                 const SizedBox(height: 30),
                 _buildMainMoodCard(),
                 const SizedBox(height: 25),
@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 25),
                 _buildSectionHeader(context, "Recent Memories", const MemoryPage()),
                 const SizedBox(height: 15),
-                _buildRecentMemoriesList(),
+                _buildRecentMemoriesList(), 
                 const SizedBox(height: 80),
               ],
             ),
@@ -88,8 +88,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Updated Header to accept the user's name
-  Widget _buildHeader(String name) {
+  Widget _buildHeader(String name, BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -97,10 +96,11 @@ class HomeScreen extends StatelessWidget {
           const Text("Welcome home,", style: TextStyle(color: Colors.grey, fontSize: 14)),
           Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.spaceDark)),
         ]),
-        InkWell(
-          onTap: () async {
-            await FirebaseAuth.instance.signOut(); // Logout feature
-          },
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (context) => const ProfilePage())
+          ),
           child: const CircleAvatar(
             radius: 24, 
             backgroundImage: NetworkImage("https://i.pravatar.cc/150?u=9")
@@ -110,9 +110,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ... (Keep your existing _buildMainMoodCard, _bentoTile, _buildRitualsRow, etc. exactly the same)
-  // Just make sure to include them below!
-  
   Widget _buildMainMoodCard() {
     return Container(
       width: double.infinity,
@@ -121,11 +118,12 @@ class HomeScreen extends StatelessWidget {
         gradient: AppColors.auraGradient,
         borderRadius: BorderRadius.circular(32),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Current Aura", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          Slider(value: 0.7, onChanged: (v) {}, activeColor: Colors.white, inactiveColor: Colors.white24),
+          Text("Current Aura", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          Text("How are you feeling today?", style: TextStyle(color: Colors.white70)),
         ],
       ),
     );
@@ -172,35 +170,80 @@ class HomeScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-        TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)), child: const Text("View All")),
+        TextButton(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)), 
+          child: const Text("View All")
+        ),
       ],
     );
   }
 
   Widget _buildRecentMemoriesList() {
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
     return SizedBox(
-      height: 120,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _memoryCard("Morning Coffee", "https://images.unsplash.com/photo-1509042239860-f550ce710b93"),
-          _memoryCard("Rainy Vibes", "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0"),
-        ],
+      height: 140,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('memories')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("No auras captured yet."));
+          }
+
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+              return _memoryCard(
+                data['note'] ?? "No text",
+                data['emoji'] ?? "✨",
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _memoryCard(String title, String url) {
+  Widget _memoryCard(String title, String emoji) {
     return Container(
-      width: 130,
+      width: 140,
       margin: const EdgeInsets.only(right: 15),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)),
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24))),
-        child: Text(title, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 28)),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.spaceDark,
+            ),
+          ),
+        ],
       ),
     );
   }

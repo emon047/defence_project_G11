@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../core/theme.dart';
 
 class MemoryPage extends StatelessWidget {
@@ -6,6 +9,8 @@ class MemoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor: AppColors.bgGradientStart,
       appBar: AppBar(
@@ -18,107 +23,55 @@ class MemoryPage extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.spaceDark),
       ),
-      body: Column(
-        children: [
-          // Filter Chips Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterChip("Date", true),
-                  const SizedBox(width: 10),
-                  _filterChip("Mood", false),
-                  const SizedBox(width: 10),
-                  _filterChip("Emotions", false),
-                  const SizedBox(width: 10),
-                  _filterChip("Location", false),
-                ],
-              ),
-            ),
-          ),
-          
-          // Grid of Memories in Bento Style
-          Expanded(
-            child: GridView.count(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('memories')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text("Error loading memories."));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          final memories = snapshot.data!.docs;
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(20),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              padding: const EdgeInsets.all(20),
               crossAxisSpacing: 15,
               mainAxisSpacing: 15,
-              children: [
-                _memoryTile(
-                  "Coffee by the lake", 
-                  "https://images.unsplash.com/photo-1509042239860-f550ce710b93", 
-                  AppColors.softLavender
-                ),
-                _memoryTile(
-                  "Evening walk", 
-                  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e", 
-                  const Color(0xFFFDE68A)
-                ),
-                _memoryTile(
-                  "Relaxed day", 
-                  null, 
-                  AppColors.auroraTeal.withOpacity(0.1)
-                ),
-                _memoryTile(
-                  "Happy Moment", 
-                  null, 
-                  const Color(0xFFFECACA)
-                ),
-                _memoryTile(
-                  "Mountain Hike", 
-                  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b", 
-                  AppColors.deepPurple.withOpacity(0.1)
-                ),
-                _memoryTile(
-                  "Study Session", 
-                  null, 
-                  Colors.blueGrey.withOpacity(0.1)
-                ),
-              ],
+              childAspectRatio: 0.85,
             ),
-          ),
-        ],
+            itemCount: memories.length,
+            itemBuilder: (context, index) {
+              var data = memories[index].data() as Map<String, dynamic>;
+              return _buildMemoryTile(data);
+            },
+          );
+        },
       ),
     );
   }
 
-  // Filter Chip Helper
-  Widget _filterChip(String label, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.deepPurple : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected ? AppColors.deepPurple : AppColors.deepPurple.withOpacity(0.1)
-        ),
-        boxShadow: isSelected 
-            ? [BoxShadow(color: AppColors.deepPurple.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] 
-            : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5)],
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey[600],
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-        ),
-      ),
-    );
-  }
+  Widget _buildMemoryTile(Map<String, dynamic> data) {
+    String formattedDate = "Recently";
+    if (data['timestamp'] != null) {
+      DateTime dt = (data['timestamp'] as Timestamp).toDate();
+      formattedDate = DateFormat('MMM dd, yyyy').format(dt);
+    }
 
-  // Memory Grid Tile Helper
-  Widget _memoryTile(String title, String? imgUrl, Color bgColor) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(28),
-        image: imgUrl != null 
-            ? DecorationImage(image: NetworkImage(imgUrl), fit: BoxFit.cover) 
-            : null,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -127,27 +80,43 @@ class MemoryPage extends StatelessWidget {
           )
         ],
       ),
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          // Glassmorphic overlay for the title
-          color: Colors.white.withOpacity(0.85),
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
-        ),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: AppColors.spaceDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(data['emoji'] ?? "✨", style: const TextStyle(fontSize: 32)),
+          const Spacer(),
+          Text(
+            data['note'] ?? "No notes",
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: AppColors.spaceDark,
+            ),
           ),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+          const SizedBox(height: 8),
+          Text(
+            formattedDate,
+            style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_awesome, size: 64, color: Colors.grey.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          const Text(
+            "No memories captured yet.",
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }
