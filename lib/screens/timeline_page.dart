@@ -24,43 +24,28 @@ class TimelinePage extends StatelessWidget {
       body: userId == null 
         ? const Center(child: Text("Please log in to view your timeline."))
         : StreamBuilder<QuerySnapshot>(
-            // We removed the .orderBy for a moment to test if it's an index issue
             stream: FirebaseFirestore.instance
                 .collection('nightly_reflections')
                 .where('userId', isEqualTo: userId)
                 .snapshots(),
             builder: (context, snapshot) {
-              // 1. Check for Errors
-              if (snapshot.hasError) {
-                return Center(child: Text("Error: ${snapshot.error}"));
-              }
-
-              // 2. Check for Loading
+              if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
+              
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: AppColors.deepPurple),
-                      SizedBox(height: 20),
-                      Text("Walking down memory lane...", style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
-                );
+                return const Center(child: CircularProgressIndicator(color: AppColors.deepPurple));
               }
 
-              // 3. Check for Empty Data
               final docs = snapshot.data?.docs ?? [];
               if (docs.isEmpty) {
-                return _buildEmptyTimeline();
+                return const Center(child: Text("Your story starts tonight.", style: TextStyle(color: Colors.grey)));
               }
 
-              // Sort manually in memory to avoid needing a Firebase Index immediately
+              // Manual Sort: Newest first
               final sortedDocs = docs.toList()
                 ..sort((a, b) {
                   Timestamp t1 = a['timestamp'] ?? Timestamp.now();
                   Timestamp t2 = b['timestamp'] ?? Timestamp.now();
-                  return t2.compareTo(t1); // Newest first
+                  return t2.compareTo(t1);
                 });
 
               return ListView.builder(
@@ -68,7 +53,17 @@ class TimelinePage extends StatelessWidget {
                 itemCount: sortedDocs.length,
                 itemBuilder: (context, index) {
                   var data = sortedDocs[index].data() as Map<String, dynamic>;
-                  return _buildTimelineCard(data);
+                  String docId = sortedDocs[index].id;
+                  Timestamp? ts = data['timestamp'] as Timestamp?;
+                  
+                  // Check if reflection is less than 24 hours old
+                  bool canEdit = false;
+                  if (ts != null) {
+                    final difference = DateTime.now().difference(ts.toDate());
+                    canEdit = difference.inHours < 24;
+                  }
+
+                  return _buildTimelineCard(context, data, docId, canEdit);
                 },
               );
             },
@@ -76,11 +71,10 @@ class TimelinePage extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineCard(Map<String, dynamic> data) {
-    String dateStr = "Recently";
-    if (data['timestamp'] != null) {
-      dateStr = DateFormat('EEEE, MMM d').format((data['timestamp'] as Timestamp).toDate());
-    }
+  Widget _buildTimelineCard(BuildContext context, Map<String, dynamic> data, String docId, bool canEdit) {
+    String dateStr = data['timestamp'] != null 
+        ? DateFormat('EEEE, MMM d').format((data['timestamp'] as Timestamp).toDate())
+        : "Recently";
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -89,11 +83,7 @@ class TimelinePage extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Column(
@@ -103,52 +93,98 @@ class TimelinePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.bold)),
-              const Icon(Icons.nightlight_round, size: 14, color: AppColors.deepPurple),
+              if (canEdit)
+                InkWell(
+                  onTap: () => _showEditDialog(context, data, docId),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.auroraTeal.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text("Edit", style: TextStyle(color: AppColors.auroraTeal, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 15),
-          _reflectionItem(Icons.wb_sunny_rounded, "The Spark", data['highlight'], Colors.orange),
-          const Divider(height: 30, thickness: 0.5),
-          _reflectionItem(Icons.cloud_done_rounded, "Released", data['letting_go'], AppColors.auroraTeal),
-          const Divider(height: 30, thickness: 0.5),
-          _reflectionItem(Icons.favorite_rounded, "Gratitude", data['gratitude'], Colors.pinkAccent),
+          _reflectionItem(Icons.wb_sunny_outlined, "Best part", data['highlight'], Colors.orange),
+          const Divider(height: 30),
+          _reflectionItem(Icons.air_outlined, "Let it go", data['letting_go'], Colors.blueGrey),
+          const Divider(height: 30),
+          _reflectionItem(Icons.favorite_outline, "I'm grateful for", data['gratitude'], Colors.pinkAccent),
         ],
       ),
     );
   }
 
-  Widget _reflectionItem(IconData icon, String label, String? text, Color iconColor) {
+  Widget _reflectionItem(IconData icon, String label, String? text, Color color) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.spaceDark)),
-          ],
-        ),
-        const SizedBox(height: 8),
+        Row(children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.spaceDark)),
+        ]),
+        const SizedBox(height: 6),
         Text(
-          (text == null || text.isEmpty) ? "No reflection captured." : text,
-          style: const TextStyle(color: Colors.black54, fontSize: 15, height: 1.4),
+          (text == null || text.isEmpty) ? "Nothing noted." : text, 
+          style: const TextStyle(color: Colors.black54, fontSize: 15, height: 1.4)
         ),
       ],
     );
   }
 
-  Widget _buildEmptyTimeline() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.withOpacity(0.2)),
-          const SizedBox(height: 20),
-          const Text("Your story starts tonight.", 
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-          const Text("Complete a Nightly Reflection to see it here.", 
-            style: TextStyle(color: Colors.grey, fontSize: 12)),
+  void _showEditDialog(BuildContext context, Map<String, dynamic> data, String docId) {
+    final hController = TextEditingController(text: data['highlight']);
+    final lController = TextEditingController(text: data['letting_go']);
+    final gController = TextEditingController(text: data['gratitude']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("Update Reflection", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _editField("Best part", hController),
+              _editField("Let it go", lController),
+              _editField("I'm grateful for", gController),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.auroraTeal),
+            onPressed: () async {
+              await FirebaseFirestore.instance.collection('nightly_reflections').doc(docId).update({
+                'highlight': hController.text,
+                'letting_go': lController.text,
+                'gratitude': gController.text,
+              });
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text("Update", style: TextStyle(color: Colors.white)),
+          )
         ],
+      ),
+    );
+  }
+
+  Widget _editField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(fontSize: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
     );
   }

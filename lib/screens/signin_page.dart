@@ -57,7 +57,7 @@ class _SigninPageState extends State<SigninPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              "Welcome Back",
+              "Log In",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
