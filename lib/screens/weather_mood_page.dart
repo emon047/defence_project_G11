@@ -6,61 +6,67 @@ class WeatherMoodPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // We will simulate the weather for now
+    String weatherType = "Sunny"; 
+    String temperature = "28°C";
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Weather Aura")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text("Weather Aura", style: TextStyle(color: AppColors.spaceDark, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.spaceDark),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(30.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Big Weather Icon
+            const Text("☀️", style: TextStyle(fontSize: 80)),
+            const SizedBox(height: 10),
+            Text(temperature, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900)),
+            const Text("Sunny Day", style: TextStyle(fontSize: 18, color: Colors.grey)),
+            
+            const SizedBox(height: 50),
+            
+            // The Simple "Unique" Part: Mood Recommendation
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(30),
+              padding: const EdgeInsets.all(25),
               decoration: BoxDecoration(
-                gradient: AppColors.auraGradient,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [BoxShadow(color: AppColors.deepPurple.withOpacity(0.2), blurRadius: 20)],
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  Icon(Icons.cloud_outlined, size: 64, color: Colors.white),
-                  SizedBox(height: 10),
-                  Text("Cloudy Skies", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                  Text("Dhaka • 24°C", style: TextStyle(color: Colors.white70)),
+                  const Text("Today's Recommended Aura:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  const Text("✨ Glow", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.deepPurple)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "The sun is out! It's a great time to be productive and share your energy.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-            _bentoTip("Low Energy?", "Lack of sun can affect your mood. Try 5 mins of light stretching.", Icons.wb_sunny_rounded),
-            const SizedBox(height: 15),
-            _bentoTip("Cozy Moment", "Perfect time to write a Future Letter with a warm tea.", Icons.coffee_rounded),
+            
+            const SizedBox(height: 40),
+            
+            // Simple Action Button
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.spaceDark,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+              child: const Text("Got it!", style: TextStyle(color: Colors.white)),
+            )
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _bentoTip(String title, String desc, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(backgroundColor: AppColors.softLavender, child: Icon(icon, color: AppColors.deepPurple, size: 20)),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(desc, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-              ],
-            ),
-          )
-        ],
       ),
     );
   }
