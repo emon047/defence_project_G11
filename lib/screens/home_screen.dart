@@ -94,15 +94,15 @@ class HomeScreen extends StatelessWidget {
                     
                     const SizedBox(height: 25),
                     
-                    // BIGGER FEATURE GRID
+                    // UNIQUE ENHANCED FEATURE GRID
                     Expanded(
-                      flex: 5,
+                      flex: 6,
                       child: GridView.count(
                         crossAxisCount: 2,
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 15,
-                        childAspectRatio: 1.4, // Adjusted for larger height
-                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.35, 
+                        physics: const BouncingScrollPhysics(),
                         children: [
                           _bentoTile(context, "Calm Mode", "Find Peace", Icons.spa_rounded, const Color(0xFFE0F2F1), AppColors.auroraTeal, const CalmModePage()),
                           _bentoTile(context, "Analytics", "View Stats", Icons.insert_chart_rounded, const Color(0xFFFFF3E0), Colors.orangeAccent, const MoodAnalyticsPage()),
@@ -165,28 +165,61 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // --- UPDATED UNIQUE BUTTON DESIGN ---
   Widget _bentoTile(BuildContext context, String title, String sub, IconData icon, Color bgColor, Color iconColor, Widget page) {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white, 
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))]
+          color: Colors.white.withOpacity(0.9), 
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white, width: 2), 
+          boxShadow: [
+            BoxShadow(
+              color: iconColor.withOpacity(0.1), 
+              blurRadius: 15, 
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, 
           children: [
             Container(
               padding: const EdgeInsets.all(10), 
-              decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(15)), 
-              child: Icon(icon, color: iconColor, size: 28) // Increased Icon Size
+              decoration: BoxDecoration(
+                color: bgColor, 
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(color: iconColor.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 3))
+                ]
+              ), 
+              child: Icon(icon, color: iconColor, size: 26),
             ),
-            const SizedBox(height: 12),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.spaceDark)),
-            Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title, 
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900, 
+                    fontSize: 15, 
+                    color: AppColors.spaceDark,
+                    letterSpacing: -0.5,
+                  )
+                ),
+                Text(
+                  sub, 
+                  style: TextStyle(
+                    fontSize: 11, 
+                    color: Colors.grey.shade600, 
+                    fontWeight: FontWeight.w600
+                  )
+                ),
+              ],
+            ),
           ],
         ),
       ),
