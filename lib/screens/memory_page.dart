@@ -9,50 +9,40 @@ class MemoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: AppColors.bgGradientStart,
-      appBar: AppBar(
-        title: const Text(
-          "All Memories",
-          style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.spaceDark),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.spaceDark),
-      ),
+      appBar: AppBar(title: const Text("All Memories", style: TextStyle(fontWeight: FontWeight.bold))),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('memories')
-            .where('userId', isEqualTo: userId)
+            .where('userId', isEqualTo: user?.uid)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Text("Error loading memories."));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return _buildEmptyState();
-          }
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-          final memories = snapshot.data!.docs;
+          // Sort manually in Dart code
+          List<QueryDocumentSnapshot> memories = snapshot.data!.docs;
+          memories.sort((a, b) {
+            var aTime = (a.data() as Map)['timestamp'] as Timestamp?;
+            var bTime = (b.data() as Map)['timestamp'] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
 
-          return GridView.builder(
+          return ListView.builder(
             padding: const EdgeInsets.all(20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              childAspectRatio: 0.85,
-            ),
             itemCount: memories.length,
             itemBuilder: (context, index) {
               var data = memories[index].data() as Map<String, dynamic>;
-              return _buildMemoryTile(data);
+              DateTime date = data['timestamp'] != null ? (data['timestamp'] as Timestamp).toDate() : DateTime.now();
+
+              return ListTile(
+                leading: Icon(Icons.circle, color: _getMoodColor(data['auraType'])),
+                title: Text(data['auraType'] ?? "Aura", style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(data['note'] ?? ""),
+                trailing: Text(DateFormat('h:mm a\nMMM d').format(date), style: const TextStyle(fontSize: 10)),
+              );
             },
           );
         },
@@ -60,64 +50,16 @@ class MemoryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildMemoryTile(Map<String, dynamic> data) {
-    String formattedDate = "Recently";
-    if (data['timestamp'] != null) {
-      DateTime dt = (data['timestamp'] as Timestamp).toDate();
-      formattedDate = DateFormat('MMM dd, yyyy').format(dt);
+  Color _getMoodColor(String? mood) {
+    switch (mood) {
+      case 'Happy': return Colors.amber;
+      case 'Calm': return Colors.cyan;
+      case 'Peaceful': return Colors.green;
+      case 'Energetic': return Colors.orange;
+      case 'Sad': return Colors.blueGrey;
+      case 'Angry': return Colors.redAccent;
+      default: return Colors.purpleAccent;
     }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(data['emoji'] ?? "✨", style: const TextStyle(fontSize: 32)),
-          const Spacer(),
-          Text(
-            data['note'] ?? "No notes",
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 14,
-              color: AppColors.spaceDark,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            formattedDate,
-            style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome, size: 64, color: Colors.grey.withOpacity(0.3)),
-          const SizedBox(height: 16),
-          const Text(
-            "No memories captured yet.",
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
   }
 }
+

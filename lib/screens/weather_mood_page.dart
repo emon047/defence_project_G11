@@ -38,13 +38,13 @@ class WeatherMoodPage extends StatelessWidget {
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Column(
+              child: const Column(
                 children: [
-                  const Text("Today's Recommended Aura:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 15),
-                  const Text("✨ Glow", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.deepPurple)),
-                  const SizedBox(height: 10),
-                  const Text(
+                  Text("Today's Recommended Aura:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 15),
+                  Text("✨ Glow", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.deepPurple)),
+                  SizedBox(height: 10),
+                  Text(
                     "The sun is out! It's a great time to be productive and share your energy.",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.black54),

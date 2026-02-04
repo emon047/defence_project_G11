@@ -16,8 +16,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToLogin() async {
-    // Wait for 3 seconds to show the logo
-    await Future.delayed(const Duration(seconds: 3));
+    // Wait for 5 seconds to show the logo
+    await Future.delayed(const Duration(seconds: 5));
     
     if (mounted) {
       Navigator.pushReplacement(

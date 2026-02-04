@@ -25,6 +25,36 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
     _calculateHarmony();
   }
 
+  // Logic to determine the sentence based on your counts
+  String _getDynamicInsight() {
+    if (_happyCount == 0 && _growthCount == 0 && _depthCount == 0) {
+      return "Your journey is just beginning. Keep reflecting to reveal your aura.";
+    }
+
+    // 1. Check for high "Fog" (Avoided thoughts)
+    if (_fogCount > _happyCount && _fogCount > _growthCount) {
+      return "There's a bit of fog lately. Try to face one small truth today to clear the air.";
+    }
+
+    // 2. Check for high "Growth" (Productivity)
+    if (_growthCount >= _happyCount && _growthCount >= _depthCount) {
+      return "You're in a season of building. Your focus is creating a stronger version of you.";
+    }
+
+    // 3. Check for high "Happy" (Joy)
+    if (_happyCount > _growthCount && _happyCount > _depthCount) {
+      return "Your aura is radiant! This light within you is your most natural state.";
+    }
+
+    // 4. Check for high "Depth" (Honesty/Reflection)
+    if (_depthCount > _happyCount) {
+      return "Your depth is your superpower. Honesty with yourself is the highest form of growth.";
+    }
+
+    // Default sentence
+    return "Your aura thrives on honesty. Keep capturing your true self.";
+  }
+
   Future<void> _calculateHarmony() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -86,11 +116,11 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
               children: [
                 _buildHarmonyCircle(),
                 const SizedBox(height: 24),
-                _buildVibeGrid(), // Compacted grid
+                _buildVibeGrid(), 
                 const SizedBox(height: 24),
                 _buildVibeGuide(),
                 const SizedBox(height: 24),
-                _buildInsightCard(),
+                _buildInsightCard(), // Now uses the dynamic logic
                 const SizedBox(height: 30),
               ],
             ),
@@ -113,6 +143,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
           ),
         ),
         Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text("${_harmonyIndex.toInt()}%", 
               style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: AppColors.spaceDark)),
@@ -130,7 +161,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
       crossAxisCount: 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.8, // Shorter height (Width is 1.8x the Height)
+      childAspectRatio: 1.8, 
       children: [
         _vibeCard("Happy", _happyCount, Colors.orangeAccent, Icons.wb_sunny_rounded),
         _vibeCard("Growth", _growthCount, AppColors.auroraTeal, Icons.auto_graph_rounded),
@@ -148,7 +179,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8)],
       ),
-      child: Row( // Using Row instead of Column to save vertical space
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 20),
@@ -208,11 +239,23 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
       decoration: BoxDecoration(
         gradient: AppColors.auraGradient,
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.deepPurple.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
-      child: const Text(
-        "Your aura thrives on honesty. Keep capturing your true self.",
+      child: Text(
+        _getDynamicInsight(), // CALLING THE LOGIC HERE
         textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+        style: const TextStyle(
+          color: Colors.white, 
+          fontSize: 14, 
+          fontWeight: FontWeight.w600,
+          height: 1.4,
+        ),
       ),
     );
   }
