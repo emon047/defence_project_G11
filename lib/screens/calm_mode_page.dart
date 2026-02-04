@@ -1,3 +1,4 @@
+import 'dart:async'; // Required for the Timer
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 
@@ -12,6 +13,11 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   String _statusText = "Prepare";
+  
+  // New Timer variables
+  Timer? _sessionTimer;
+  int _secondsRemaining = 60; // 1 Minute session
+  bool _isFinished = false;
 
   @override
   void initState() {
@@ -19,7 +25,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 10), 
     );
 
     _scaleAnimation = TweenSequence<double>([
@@ -38,10 +44,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
     ]).animate(_controller);
 
     _controller.addListener(() {
-      // FIX: Check if the widget is still "mounted" before calling setState.
-      // This stops the sea of red assertion errors.
-      if (!mounted) return; 
-
+      if (!mounted) return;
       setState(() {
         if (_controller.value < 0.4) {
           _statusText = "Inhale";
@@ -53,12 +56,35 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
       });
     });
 
+    _startSession();
+  }
+
+  // --- TIMER LOGIC ---
+  void _startSession() {
     _controller.repeat();
+    _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        if (_secondsRemaining > 0) {
+          _secondsRemaining--;
+        } else {
+          _finishSession();
+        }
+      });
+    });
+  }
+
+  void _finishSession() {
+    _sessionTimer?.cancel();
+    _controller.stop();
+    setState(() {
+      _isFinished = true;
+    });
   }
 
   @override
   void dispose() {
-    // ALWAYS dispose the controller to free up memory
+    _sessionTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -66,19 +92,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // UPDATED: Using a trendy Dark Aura background instead of flat dark
-      backgroundColor: const Color(0xFF0F111A), 
-      appBar: AppBar(
-        title: const Text("Calm Mode", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
-        centerTitle: true,
-        // UPDATED: Transparent look
-        backgroundColor: Colors.transparent, 
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: const Color(0xFF0F111A),
       body: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(
@@ -90,64 +104,101 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
             ],
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedBuilder(
-                animation: _scaleAnimation,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Glow circles kept as per your logic
-                      _breathingCircle(opacity: 0.08, scaleMultiplier: 0.5),
-                      _breathingCircle(opacity: 0.15, scaleMultiplier: 0.25),
-                      
-                      // Main Circle
-                      Container(
-                        width: 150 * _scaleAnimation.value,
-                        height: 150 * _scaleAnimation.value,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          // UPDATED: Using your Aura Gradient
-                          gradient: AppColors.auraGradient,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.auroraTeal.withOpacity(0.2),
-                              blurRadius: 40,
-                              spreadRadius: 5,
-                            )
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            _statusText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2
+        child: Stack(
+          children: [
+            // Main Calm UI
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Timer Display
+                  Text(
+                    "00:${_secondsRemaining.toString().padLeft(2, '0')}",
+                    style: const TextStyle(color: Colors.white38, fontSize: 18, letterSpacing: 2),
+                  ),
+                  const SizedBox(height: 40),
+
+                  AnimatedBuilder(
+                    animation: _scaleAnimation,
+                    builder: (context, child) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _breathingCircle(opacity: 0.08, scaleMultiplier: 0.5),
+                          _breathingCircle(opacity: 0.15, scaleMultiplier: 0.25),
+                          Container(
+                            width: 150 * _scaleAnimation.value,
+                            height: 150 * _scaleAnimation.value,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppColors.auraGradient,
+                            ),
+                            child: Center(
+                              child: Text(
+                                _isFinished ? "✓" : _statusText,
+                                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 100),
+                  const Text("Follow the circle", style: TextStyle(color: Colors.white54, letterSpacing: 2)),
+                ],
               ),
-              const SizedBox(height: 120),
-              const Text(
-                "Follow the circle",
-                style: TextStyle(
-                  color: Colors.white54, 
-                  fontSize: 14, 
-                  letterSpacing: 2, 
-                  fontWeight: FontWeight.w300
-                ),
+            ),
+
+            // --- SESSION COMPLETE OVERLAY ---
+            if (_isFinished) _buildCompletionOverlay(),
+            
+            // Close Button
+            Positioned(
+              top: 50,
+              left: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletionOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.8),
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wb_sunny_rounded, color: AppColors.auroraTeal, size: 80),
+            const SizedBox(height: 20),
+            const Text(
+              "Session Complete",
+              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              "Your aura feels much lighter now.",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.auroraTeal,
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: const Text("Return to Home", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
       ),
     );
@@ -159,7 +210,6 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
       height: 150 * (_scaleAnimation.value + scaleMultiplier),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        // UPDATED: Aurora Teal for the glow
         color: AppColors.auroraTeal.withOpacity(opacity),
       ),
     );
