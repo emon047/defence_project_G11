@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../core/theme.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -13,145 +12,148 @@ class CalendarPage extends StatefulWidget {
 
 class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  Map<DateTime, bool> _completedDays = {};
+  DateTime _selectedDay = DateTime.now();
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedDay = _focusedDay;
-    _fetchCompletionData();
-  }
+  // --- COLORS ---
+  static const Color weekendColor = Color(0xFFFFD700); // Elegant Gold for Fri-Sat
+  static const Color weekdayColor = Colors.white;    // Pure White for Sun-Thu
 
-  // Purpose: Fetch days where the user actually completed a reflection
-  Future<void> _fetchCompletionData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  final Map<String, String> _holidayData = {
+    "1-1": "New Year's Day", "1-24": "International Day of Education",
+    "2-4": "World Cancer Day", "2-14": "Valentine's Day",
+    "3-8": "International Women's Day", "3-21": "World Poetry Day",
+    "4-1": "April Fool's Day", "4-22": "Earth Day",
+    "5-1": "International Labour Day", "5-31": "World No-Tobacco Day",
+    "6-5": "World Environment Day", "6-21": "International Yoga Day",
+    "7-17": "World Emoji Day", "7-30": "International Day of Friendship",
+    "8-12": "International Youth Day", "8-19": "World Photography Day",
+    "9-21": "International Day of Peace", "9-27": "World Tourism Day",
+    "10-16": "World Food Day", "10-31": "Halloween",
+    "11-13": "World Kindness Day", "11-19": "International Men's Day",
+    "12-10": "Human Rights Day", "12-25": "Christmas Day",
+    "12-31": "New Year's Eve",
+  };
 
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('nightly_reflections')
-        .where('userId', isEqualTo: user.uid)
-        .get();
+  String _getEventInfo(DateTime selected) {
+    String key = "${selected.month}-${selected.day}";
+    if (_holidayData.containsKey(key)) return "Today's Event: ${_holidayData[key]}";
 
-    Map<DateTime, bool> data = {};
-    for (var doc in querySnapshot.docs) {
-      Timestamp ts = doc['timestamp'];
-      DateTime date = ts.toDate();
-      // Normalize to midnight to match calendar comparison
-      DateTime normalized = DateTime(date.year, date.month, date.day);
-      data[normalized] = true;
+    DateTime checkDate = selected;
+    for (int i = 1; i <= 365; i++) {
+      checkDate = checkDate.add(const Duration(days: 1));
+      String nextKey = "${checkDate.month}-${checkDate.day}";
+      if (_holidayData.containsKey(nextKey)) {
+        String formattedNextDate = DateFormat('dd MMMM yyyy').format(checkDate);
+        return "No special event today. \nUpcoming: ${_holidayData[nextKey]} on $formattedNextDate";
+      }
     }
-
-    setState(() {
-      _completedDays = data;
-    });
+    return "No upcoming events found.";
   }
 
   @override
   Widget build(BuildContext context) {
+    const Color deepSpaceBg = Color.fromARGB(255, 26, 28, 46);
+
     return Scaffold(
-      backgroundColor: AppColors.bgGradientStart,
+      backgroundColor: deepSpaceBg,
       appBar: AppBar(
-        title: const Text("Aura History", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.spaceDark)),
-        centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.spaceDark),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text("EVENT TRACKER", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: Column(
         children: [
-          _buildCalendarCard(),
-          const SizedBox(height: 30),
-          _buildLegend(),
+          _buildCalendar(),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(50)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    "Date: ${DateFormat('dd/MM/yyyy').format(_selectedDay)}",
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 30),
+                  Text(
+                    _getEventInfo(_selectedDay),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 16, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarCard() {
+  Widget _buildCalendar() {
     return Container(
       margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: TableCalendar(
         firstDay: DateTime.utc(2024, 1, 1),
         lastDay: DateTime.utc(2030, 12, 31),
         focusedDay: _focusedDay,
         selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-        onDaySelected: (selectedDay, focusedDay) {
-          setState(() {
-            _selectedDay = selectedDay;
-            _focusedDay = focusedDay;
-          });
-        },
-        calendarStyle: CalendarStyle(
-          todayDecoration: BoxDecoration(color: AppColors.deepPurple.withOpacity(0.2), shape: BoxShape.circle),
-          selectedDecoration: const BoxDecoration(color: AppColors.deepPurple, shape: BoxShape.circle),
-          markerDecoration: const BoxDecoration(color: AppColors.auroraTeal, shape: BoxShape.circle),
+        onDaySelected: (sel, foc) => setState(() { _selectedDay = sel; _focusedDay = foc; }),
+        headerStyle: const HeaderStyle(
+          formatButtonVisible: false, 
+          titleCentered: true, 
+          titleTextStyle: TextStyle(color: Colors.white),
+          leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
+          rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
         ),
-        // UNIQUE FEATURE: The Heatmap Logic
+        
+        // --- THE UNIQUE COLOR LOGIC ---
         calendarBuilders: CalendarBuilders(
+          // Colors the Day Labels (Mon, Tue, Wed...)
+          dowBuilder: (context, day) {
+            bool isWeekend = day.weekday == DateTime.friday || day.weekday == DateTime.saturday;
+            return Center(
+              child: Text(
+                DateFormat.E().format(day),
+                style: TextStyle(color: isWeekend ? weekendColor : weekdayColor, fontWeight: FontWeight.bold),
+              ),
+            );
+          },
+          // Colors the Date Numbers (1, 2, 3...)
           defaultBuilder: (context, day, focusedDay) {
-            DateTime normalized = DateTime(day.year, day.month, day.day);
-            if (_completedDays.containsKey(normalized)) {
-              return Container(
-                margin: const EdgeInsets.all(6),
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.auraGradient, // Using your theme's gradient
-                  shape: BoxShape.circle,
-                ),
-                child: Text("${day.day}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              );
-            }
-            return null;
+            bool isWeekend = day.weekday == DateTime.friday || day.weekday == DateTime.saturday;
+            return Center(
+              child: Text(
+                '${day.day}',
+                style: TextStyle(color: isWeekend ? weekendColor : weekdayColor),
+              ),
+            );
           },
         ),
-        headerStyle: const HeaderStyle(
-          formatButtonVisible: false,
-          titleCentered: true,
-          titleTextStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+
+        calendarStyle: CalendarStyle(
+          // Today and Selected remain teal for clarity
+          todayDecoration: BoxDecoration(color: Colors.teal.withOpacity(0.3), shape: BoxShape.circle),
+          selectedDecoration: const BoxDecoration(color: Colors.teal, shape: BoxShape.circle),
+          outsideDaysVisible: false,
         ),
       ),
-    );
-  }
-
-  Widget _buildLegend() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Column(
-        children: [
-          const Text("Your Consistency", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.spaceDark)),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _legendItem(AppColors.auroraTeal, "Reflection Saved"),
-              const SizedBox(width: 20),
-              _legendItem(Colors.grey.shade300, "Pending"),
-            ],
-          ),
-          const SizedBox(height: 40),
-          Text(
-            "You have captured ${_completedDays.length} auras this month!",
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _legendItem(Color color, String text) {
-    return Row(
-      children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
     );
   }
 }
+

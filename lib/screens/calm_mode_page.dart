@@ -129,7 +129,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
                           Container(
                             width: 150 * _scaleAnimation.value,
                             height: 150 * _scaleAnimation.value,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: AppColors.auraGradient,
                             ),

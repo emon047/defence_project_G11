@@ -8,11 +8,11 @@ import 'memory_page.dart';
 import 'mood_analytics_page.dart';
 import 'calm_mode_page.dart';
 import 'calendar_page.dart';
-import 'timeline_page.dart';
 import 'weather_mood_page.dart';
-import 'goodnight_reflection_page.dart';
 import 'profile_page.dart'; 
 import 'streak_history_page.dart';
+// 1. IMPORT THE NEW MERGED FILE
+import 'nightfall.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
   Color _getMoodColor(String? mood) {
     switch (mood) {
       case 'Happy': return Colors.amber;
-      case 'Calm': return AppColors.auroraTeal; // Updated to match theme
+      case 'Calm': return AppColors.auroraTeal; 
       case 'Peaceful': return Colors.greenAccent;
       case 'Energetic': return Colors.orangeAccent;
       case 'Sad': return Colors.blueGrey;
@@ -77,7 +77,7 @@ class HomeScreen extends StatelessWidget {
     final displayName = user?.email?.split('@')[0] ?? "Explorer";
 
     return Scaffold(
-      backgroundColor: AppColors.spaceDark, // Updated to Space Dark
+      backgroundColor: AppColors.spaceDark, 
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('memories')
@@ -99,7 +99,7 @@ class HomeScreen extends StatelessWidget {
           return Container(
             height: MediaQuery.of(context).size.height,
             decoration: const BoxDecoration(
-              color: AppColors.spaceDark, // Solid Space Dark or very subtle gradient
+              color: AppColors.spaceDark, 
             ),
             child: SafeArea(
               bottom: false,
@@ -124,9 +124,11 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           _bentoTile(context, "Calm Mode", "Find Peace", Icons.spa_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalmModePage()),
                           _bentoTile(context, "Analytics", "View Stats", Icons.insert_chart_rounded, Colors.white.withOpacity(0.05), Colors.orangeAccent, const MoodAnalyticsPage()),
+                          // 2. TIMELINE NOW LINKS TO THE CLASS IN NIGHTFALL.DART
                           _bentoTile(context, "Timeline", "Aura Logs", Icons.auto_stories_rounded, Colors.white.withOpacity(0.05), Colors.blueAccent, const TimelinePage()),
                           _bentoTile(context, "Sky Aura", "Weather", Icons.filter_drama_rounded, Colors.white.withOpacity(0.05), Colors.pinkAccent, const WeatherMoodPage()),
-                          _bentoTile(context, "Night Fall", "Reflect", Icons.nights_stay_rounded, Colors.white.withOpacity(0.05), Colors.indigoAccent, const GoodnightReflectionPage()),
+                          // 3. UPDATED NIGHT FALL TO LINK TO NIGHTFALLPAGE
+                          _bentoTile(context, "Night Fall", "Reflect", Icons.nights_stay_rounded, Colors.white.withOpacity(0.05), Colors.indigoAccent, const NightfallPage()),
                           _bentoTile(context, "Calendar", "History", Icons.calendar_month_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalendarPage()),
                         ],
                       ),
@@ -146,7 +148,7 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddMemoryPage())),
-        backgroundColor: AppColors.auroraTeal, // Changed to Accent Teal
+        backgroundColor: AppColors.auroraTeal, 
         child: const Icon(Icons.add_rounded, color: AppColors.spaceDark, size: 35),
       ),
     );
@@ -206,13 +208,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // NOTE: page is not 'const' here to avoid expression errors
   Widget _bentoTile(BuildContext context, String title, String sub, IconData icon, Color bgColor, Color iconColor, Widget page) {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: bgColor, // Glass effect
+          color: bgColor, 
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5), 
         ),
@@ -283,4 +286,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
