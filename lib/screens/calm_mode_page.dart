@@ -19,22 +19,18 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10), // Total cycle: 4 Inhale + 2 Hold + 4 Exhale
+      duration: const Duration(seconds: 10),
     );
 
-    // Custom breathing sequence
     _scaleAnimation = TweenSequence<double>([
-      // Inhale (4s): Scale from 1.0 to 1.8
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.0, end: 1.8).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 40, 
       ),
-      // Hold (2s): Stay at 1.8
       TweenSequenceItem(
         tween: ConstantTween<double>(1.8),
         weight: 20,
       ),
-      // Exhale (4s): Scale from 1.8 back to 1.0
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.8, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 40,
@@ -42,6 +38,10 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
     ]).animate(_controller);
 
     _controller.addListener(() {
+      // FIX: Check if the widget is still "mounted" before calling setState.
+      // This stops the sea of red assertion errors.
+      if (!mounted) return; 
+
       setState(() {
         if (_controller.value < 0.4) {
           _statusText = "Inhale";
@@ -58,6 +58,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
 
   @override
   void dispose() {
+    // ALWAYS dispose the controller to free up memory
     _controller.dispose();
     super.dispose();
   }
@@ -65,63 +66,88 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgGradientStart,
+      // UPDATED: Using a trendy Dark Aura background instead of flat dark
+      backgroundColor: const Color(0xFF0F111A), 
       appBar: AppBar(
-        title: const Text("Calm Mode", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        title: const Text("Calm Mode", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        centerTitle: true,
+        // UPDATED: Transparent look
+        backgroundColor: Colors.transparent, 
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Layered Breathing Animation
-            AnimatedBuilder(
-              animation: _scaleAnimation,
-              builder: (context, child) {
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Outer Glow 1
-                    _breathingCircle(opacity: 0.1, scaleMultiplier: 0.4),
-                    // Outer Glow 2
-                    _breathingCircle(opacity: 0.2, scaleMultiplier: 0.2),
-                    // Main Circle
-                    Container(
-                      width: 150 * _scaleAnimation.value,
-                      height: 150 * _scaleAnimation.value,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColors.auraGradient,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.deepPurple.withOpacity(0.3),
-                            blurRadius: 30,
-                            spreadRadius: 10,
-                          )
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _statusText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.2,
+            colors: [
+              AppColors.deepPurple.withOpacity(0.15),
+              const Color(0xFF0F111A),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedBuilder(
+                animation: _scaleAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Glow circles kept as per your logic
+                      _breathingCircle(opacity: 0.08, scaleMultiplier: 0.5),
+                      _breathingCircle(opacity: 0.15, scaleMultiplier: 0.25),
+                      
+                      // Main Circle
+                      Container(
+                        width: 150 * _scaleAnimation.value,
+                        height: 150 * _scaleAnimation.value,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // UPDATED: Using your Aura Gradient
+                          gradient: AppColors.auraGradient,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.auroraTeal.withOpacity(0.2),
+                              blurRadius: 40,
+                              spreadRadius: 5,
+                            )
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            _statusText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 100),
-            const Text(
-              "Follow the circle",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-          ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 120),
+              const Text(
+                "Follow the circle",
+                style: TextStyle(
+                  color: Colors.white54, 
+                  fontSize: 14, 
+                  letterSpacing: 2, 
+                  fontWeight: FontWeight.w300
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -133,6 +159,7 @@ class _CalmModePageState extends State<CalmModePage> with SingleTickerProviderSt
       height: 150 * (_scaleAnimation.value + scaleMultiplier),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        // UPDATED: Aurora Teal for the glow
         color: AppColors.auroraTeal.withOpacity(opacity),
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'signin_page.dart'; // Make sure this import is correct
+import '../core/theme.dart';
+import 'signin_page.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,13 +17,11 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToLogin() async {
-    // Wait for 5 seconds to show the logo
     await Future.delayed(const Duration(seconds: 5));
     
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        // FIXED: Removed 'const' before SigninPage()
         MaterialPageRoute(builder: (context) => const SigninPage()),
       );
     }
@@ -30,15 +29,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).primaryColor,
-      body: const Center(
+    return const Scaffold(
+      backgroundColor: AppColors.spaceDark, 
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Your logo or App Name
-            Icon(Icons.auto_awesome, size: 80, color: Colors.white),
-            SizedBox(height: 20),
+            // Icon removed as requested
             Text(
               "Memoaura",
               style: TextStyle(
@@ -47,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: 10),
+            SizedBox(height: 20), // Adjusted spacing for a cleaner look
             CircularProgressIndicator(color: Colors.white),
           ],
         ),

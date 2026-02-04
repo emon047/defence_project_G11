@@ -6,66 +6,145 @@ class WeatherMoodPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We will simulate the weather for now
-    String weatherType = "Sunny"; 
     String temperature = "28°C";
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      // Extends body behind AppBar for a seamless gradient look
+      extendBodyBehindAppBar: true, 
       appBar: AppBar(
-        title: const Text("Weather Aura", style: TextStyle(color: AppColors.spaceDark, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: const Text(
+          "Weather Aura", 
+          style: TextStyle(
+            color: AppColors.spaceDark, 
+            fontWeight: FontWeight.bold
+          )
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.spaceDark),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(30.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Big Weather Icon
-            const Text("☀️", style: TextStyle(fontSize: 80)),
-            const SizedBox(height: 10),
-            Text(temperature, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900)),
-            const Text("Sunny Day", style: TextStyle(fontSize: 18, color: Colors.grey)),
-            
-            const SizedBox(height: 50),
-            
-            // The Simple "Unique" Part: Mood Recommendation
-            Container(
-              padding: const EdgeInsets.all(25),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(20),
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.bgGradient, // Using your custom gradient
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Weather Icon with soft depth
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.deepPurple.withOpacity(0.1),
+                      blurRadius: 40,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Text("☀️", style: TextStyle(fontSize: 80)),
               ),
-              child: const Column(
-                children: [
-                  Text("Today's Recommended Aura:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 15),
-                  Text("✨ Glow", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: AppColors.deepPurple)),
-                  SizedBox(height: 10),
-                  Text(
-                    "The sun is out! It's a great time to be productive and share your energy.",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
+              
+              const SizedBox(height: 25),
+              
+              Text(
+                temperature, 
+                style: const TextStyle(
+                  fontSize: 56, 
+                  fontWeight: FontWeight.w900, 
+                  color: AppColors.spaceDark
+                )
+              ),
+              const Text(
+                "Sunny Day", 
+                style: TextStyle(
+                  fontSize: 18, 
+                  color: Colors.black45, 
+                  fontWeight: FontWeight.w500
+                )
+              ),
+              
+              const SizedBox(height: 50),
+              
+              // Unique Mood Card using your auraGradient
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(25),
+                decoration: BoxDecoration(
+                  gradient: AppColors.auraGradient, // Using your brand gradient
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.deepPurple.withOpacity(0.3),
+                      blurRadius: 25,
+                      offset: const Offset(0, 15),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      "TODAY'S RECOMMENDED AURA", 
+                      style: TextStyle(
+                        fontSize: 12, 
+                        fontWeight: FontWeight.bold, 
+                        color: Colors.white70, 
+                        letterSpacing: 1.1
+                      )
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "✨ Glow", 
+                      style: TextStyle(
+                        fontSize: 36, 
+                        fontWeight: FontWeight.bold, 
+                        color: Colors.white
+                      )
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "The sun is out! It's a great time to be productive and share your energy.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 15,
+                        height: 1.5
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 50),
+              
+              // Final Action Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.spaceDark,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)
+                    ),
+                    elevation: 5,
                   ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            // Simple Action Button
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.spaceDark,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              ),
-              child: const Text("Got it!", style: TextStyle(color: Colors.white)),
-            )
-          ],
+                  child: const Text(
+                    "Got it!", 
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                  ),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

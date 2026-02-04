@@ -20,12 +20,12 @@ class HomeScreen extends StatelessWidget {
   Color _getMoodColor(String? mood) {
     switch (mood) {
       case 'Happy': return Colors.amber;
-      case 'Calm': return Colors.cyan;
-      case 'Peaceful': return Colors.green;
-      case 'Energetic': return Colors.orange;
+      case 'Calm': return AppColors.auroraTeal; // Updated to match theme
+      case 'Peaceful': return Colors.greenAccent;
+      case 'Energetic': return Colors.orangeAccent;
       case 'Sad': return Colors.blueGrey;
       case 'Angry': return Colors.redAccent;
-      default: return Colors.purpleAccent;
+      default: return AppColors.deepPurple;
     }
   }
 
@@ -77,15 +77,13 @@ class HomeScreen extends StatelessWidget {
     final displayName = user?.email?.split('@')[0] ?? "Explorer";
 
     return Scaffold(
-      backgroundColor: AppColors.bgGradientStart,
+      backgroundColor: AppColors.spaceDark, // Updated to Space Dark
       body: StreamBuilder<QuerySnapshot>(
-        // WE REMOVED .orderBy() HERE TO FIX THE ERROR
         stream: FirebaseFirestore.instance
             .collection('memories')
             .where('userId', isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
-          // SORTING MANUALLY IN DART TO PREVENT FIREBASE CRASH
           List<QueryDocumentSnapshot> allMemories = snapshot.data?.docs ?? [];
           allMemories.sort((a, b) {
             var aTime = (a.data() as Map)['timestamp'] as Timestamp?;
@@ -101,11 +99,7 @@ class HomeScreen extends StatelessWidget {
           return Container(
             height: MediaQuery.of(context).size.height,
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [AppColors.bgGradientStart, AppColors.bgGradientEnd],
-              ),
+              color: AppColors.spaceDark, // Solid Space Dark or very subtle gradient
             ),
             child: SafeArea(
               bottom: false,
@@ -119,7 +113,6 @@ class HomeScreen extends StatelessWidget {
                     _buildHeroStreakCard(context, streakData['current']!, streakData['highest']!),
                     const SizedBox(height: 25),
                     
-                    // ALL YOUR OPERATIONS (Bento Grid) ARE BACK:
                     Expanded(
                       flex: 6,
                       child: GridView.count(
@@ -129,12 +122,12 @@ class HomeScreen extends StatelessWidget {
                         childAspectRatio: 1.35, 
                         physics: const BouncingScrollPhysics(),
                         children: [
-                          _bentoTile(context, "Calm Mode", "Find Peace", Icons.spa_rounded, const Color(0xFFE0F2F1), AppColors.auroraTeal, const CalmModePage()),
-                          _bentoTile(context, "Analytics", "View Stats", Icons.insert_chart_rounded, const Color(0xFFFFF3E0), Colors.orangeAccent, const MoodAnalyticsPage()),
-                          _bentoTile(context, "Timeline", "Aura Logs", Icons.auto_stories_rounded, const Color(0xFFE3F2FD), Colors.blueAccent, const TimelinePage()),
-                          _bentoTile(context, "Sky Aura", "Weather", Icons.filter_drama_rounded, const Color(0xFFFCE4EC), Colors.pinkAccent, const WeatherMoodPage()),
-                          _bentoTile(context, "Night Fall", "Reflect", Icons.nights_stay_rounded, const Color(0xFFE8EAF6), Colors.indigo, const GoodnightReflectionPage()),
-                          _bentoTile(context, "Calendar", "History", Icons.calendar_month_rounded, const Color(0xFFF1F8E9), Colors.green, const CalendarPage()),
+                          _bentoTile(context, "Calm Mode", "Find Peace", Icons.spa_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalmModePage()),
+                          _bentoTile(context, "Analytics", "View Stats", Icons.insert_chart_rounded, Colors.white.withOpacity(0.05), Colors.orangeAccent, const MoodAnalyticsPage()),
+                          _bentoTile(context, "Timeline", "Aura Logs", Icons.auto_stories_rounded, Colors.white.withOpacity(0.05), Colors.blueAccent, const TimelinePage()),
+                          _bentoTile(context, "Sky Aura", "Weather", Icons.filter_drama_rounded, Colors.white.withOpacity(0.05), Colors.pinkAccent, const WeatherMoodPage()),
+                          _bentoTile(context, "Night Fall", "Reflect", Icons.nights_stay_rounded, Colors.white.withOpacity(0.05), Colors.indigoAccent, const GoodnightReflectionPage()),
+                          _bentoTile(context, "Calendar", "History", Icons.calendar_month_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalendarPage()),
                         ],
                       ),
                     ),
@@ -153,24 +146,27 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddMemoryPage())),
-        backgroundColor: AppColors.spaceDark,
-        child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+        backgroundColor: AppColors.auroraTeal, // Changed to Accent Teal
+        child: const Icon(Icons.add_rounded, color: AppColors.spaceDark, size: 35),
       ),
     );
   }
 
-  // Restored all UI Helpers
   Widget _buildHeader(String name, BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("Welcome back,", style: TextStyle(color: Colors.grey, fontSize: 14)),
-          Text(name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.spaceDark)),
+          const Text("Welcome back,", style: TextStyle(color: Colors.white54, fontSize: 14)),
+          Text(name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)),
         ]),
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage())),
-          child: const CircleAvatar(radius: 22, backgroundColor: Color(0xFFE6E0FF), child: Icon(Icons.person_rounded, color: AppColors.deepPurple)),
+          child: CircleAvatar(
+            radius: 22, 
+            backgroundColor: Colors.white.withOpacity(0.1), 
+            child: const Icon(Icons.person_rounded, color: AppColors.auroraTeal)
+          ),
         ),
       ],
     );
@@ -183,13 +179,17 @@ class HomeScreen extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 25),
         decoration: BoxDecoration(
-          gradient: AppColors.auraGradient,
+          gradient: const LinearGradient(
+            colors: [AppColors.deepPurple, Color(0xFF4F46E5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [BoxShadow(color: AppColors.deepPurple.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6))],
         ),
         child: Row(
           children: [
-            const Text("🔥", style: TextStyle(fontSize: 45)),
+            const Text("🔥", style: TextStyle(fontSize: 40)),
             const SizedBox(width: 20),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,24 +212,20 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9), 
+          color: bgColor, // Glass effect
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white, width: 2), 
+          border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5), 
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween, 
           children: [
-            Container(
-              padding: const EdgeInsets.all(10), 
-              decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)), 
-              child: Icon(icon, color: iconColor, size: 26),
-            ),
+            Icon(icon, color: iconColor, size: 30),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: AppColors.spaceDark)),
-                Text(sub, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white)),
+                Text(sub, style: const TextStyle(fontSize: 11, color: Colors.white38, fontWeight: FontWeight.w600)),
               ],
             ),
           ],
@@ -242,19 +238,19 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)),
-          child: const Text("See All", style: TextStyle(color: AppColors.deepPurple, fontSize: 14, fontWeight: FontWeight.bold))
+          child: const Text("See All", style: TextStyle(color: AppColors.auroraTeal, fontSize: 14, fontWeight: FontWeight.bold))
         ),
       ],
     );
   }
 
   Widget _buildRecentMemoriesList(List<QueryDocumentSnapshot> docs) {
-    if (docs.isEmpty) return const Text("No recent logs.");
+    if (docs.isEmpty) return const Text("No recent logs.", style: TextStyle(color: Colors.white38));
     return SizedBox(
-      height: 55,
+      height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: docs.length,
@@ -264,21 +260,21 @@ class HomeScreen extends StatelessWidget {
           Color orbColor = _getMoodColor(data['auraType']);
 
           return Container(
-            width: 180,
+            width: 200,
             margin: const EdgeInsets.only(right: 12),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withOpacity(0.05),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5),
             ),
             child: Row(
               children: [
-                Text(DateFormat('MMM d').format(date), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey.shade500)),
+                Text(DateFormat('MMM d').format(date), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white38)),
                 const SizedBox(width: 8),
                 Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: orbColor)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(data['note'] ?? "", maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.spaceDark))),
+                Expanded(child: Text(data['note'] ?? "", maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70))),
               ],
             ),
           );
@@ -287,3 +283,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+

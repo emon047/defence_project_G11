@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../core/theme.dart';
+import '../core/theme.dart'; // Ensure this path is correct for your project
 
 class AddMemoryPage extends StatefulWidget {
   const AddMemoryPage({super.key});
@@ -12,50 +12,46 @@ class AddMemoryPage extends StatefulWidget {
 
 class _AddMemoryPageState extends State<AddMemoryPage> {
   final TextEditingController _noteController = TextEditingController();
-  String selectedMood = "Happy";
+  String _selectedMood = 'Happy';
   bool _isSaving = false;
-  
-  final List<Map<String, dynamic>> moods = [
-    {'label': 'Happy', 'icon': Icons.sentiment_very_satisfied_rounded, 'color': Colors.amber},
-    {'label': 'Calm', 'icon': Icons.spa_rounded, 'color': Colors.cyan},
-    {'label': 'Peaceful', 'icon': Icons.wb_twilight_rounded, 'color': Colors.green},
-    {'label': 'Energetic', 'icon': Icons.bolt_rounded, 'color': Colors.orange},
-    {'label': 'Sad', 'icon': Icons.cloud_rounded, 'color': Colors.blueGrey},
-    {'label': 'Angry', 'icon': Icons.local_fire_department_rounded, 'color': Colors.redAccent},
+
+  final List<Map<String, dynamic>> _moods = [
+    {'name': 'Happy', 'emoji': '😊'},
+    {'name': 'Calm', 'emoji': '😌'},
+    {'name': 'Energetic', 'emoji': '⚡'},
+    {'name': 'Sad', 'emoji': '😢'},
+    {'name': 'Angry', 'emoji': '😤'},
   ];
 
-  Future<void> _saveMemory() async {
-    if (_noteController.text.isEmpty) {
+  @override
+  void dispose() {
+    _noteController.dispose(); // Good practice to prevent memory leaks
+    super.dispose();
+  }
+
+  void _saveMemory() async {
+    if (_noteController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please write a small note")),
+        const SnackBar(content: Text("Please write a note before saving")),
       );
       return;
     }
 
-    // 1. Check if already saving to prevent double-taps
-    if (_isSaving) return;
-
     setState(() => _isSaving = true);
+    final user = FirebaseAuth.instance.currentUser;
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      
-      // 2. Perform the async operation
       await FirebaseFirestore.instance.collection('memories').add({
         'userId': user?.uid,
-        'auraType': selectedMood,
-        'note': _noteController.text,
+        'auraType': _selectedMood,
+        'note': _noteController.text.trim(),
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // 3. IMPORTANT: Check if the widget is still in the tree before navigating
-      // This prevents the "disposed EngineFlutterView" error
-      if (!mounted) return;
-      
-      Navigator.of(context).pop();
-
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      // 4. If error occurs, reset saving state but only if still mounted
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,95 +64,122 @@ class _AddMemoryPageState extends State<AddMemoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.spaceDark,
       appBar: AppBar(
-        title: const Text("Log Aura", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.spaceDark)),
+        title: const Text(
+          "Log Your Aura", 
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.spaceDark),
-          onPressed: () => Navigator.pop(context),
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView( // Added scroll view to prevent overflow errors
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              const Text("How are you feeling?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 20),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, mainAxisSpacing: 15, crossAxisSpacing: 15,
-                ),
-                itemCount: moods.length,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "How are you feeling?",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            
+            // Mood Selector
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _moods.length,
                 itemBuilder: (context, index) {
-                  bool isSelected = selectedMood == moods[index]['label'];
+                  bool isSelected = _selectedMood == _moods[index]['name'];
                   return GestureDetector(
-                    onTap: () => setState(() => selectedMood = moods[index]['label']),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
+                    onTap: () => setState(() => _selectedMood = _moods[index]['name']),
+                    child: Container(
+                      width: 85,
+                      margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
-                        color: isSelected ? moods[index]['color'] : Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: isSelected ? moods[index]['color'] : Colors.grey.shade200, width: 2),
+                        color: isSelected ? AppColors.auroraTeal : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected ? AppColors.auroraTeal : Colors.white.withOpacity(0.1),
+                          width: 2,
+                        ),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(moods[index]['icon'], color: isSelected ? Colors.white : Colors.grey.shade400, size: 30),
-                          const SizedBox(height: 4),
-                          Text(moods[index]['label'], style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.grey.shade500)),
+                          Text(_moods[index]['emoji'], style: const TextStyle(fontSize: 28)),
+                          const SizedBox(height: 5),
+                          Text(
+                            _moods[index]['name'],
+                            style: TextStyle(
+                              color: isSelected ? AppColors.spaceDark : Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   );
                 },
               ),
-              const SizedBox(height: 30),
-              const Text("Note", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _noteController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: "What's on your mind?",
-                  filled: true,
-                  fillColor: const Color(0xFFF5F7FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+            ),
+            
+            const SizedBox(height: 40),
+            const Text(
+              "Describe your aura",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 15),
+            
+            TextField(
+              controller: _noteController,
+              maxLines: 5,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: "What's happening...",
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: AppColors.auroraTeal),
                 ),
               ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveMemory,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.spaceDark,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            
+            const SizedBox(height: 40),
+            
+            _isSaving
+                ? const Center(child: CircularProgressIndicator(color: AppColors.auroraTeal))
+                : SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _saveMemory,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.auroraTeal,
+                        foregroundColor: AppColors.spaceDark,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "SAVE LOG",
+                        // FIXED: Using FontWeight.w900 instead of .black to avoid member errors
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                      ),
+                    ),
                   ),
-                  child: _isSaving 
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Save Aura", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-              const SizedBox(height: 30),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
 }
+
