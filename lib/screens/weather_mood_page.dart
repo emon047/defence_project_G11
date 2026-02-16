@@ -8,19 +8,18 @@ class WeatherMoodPage extends StatefulWidget {
 }
 
 class _WeatherMoodPageState extends State<WeatherMoodPage> {
-  // Local theme colors
   final Color spaceDark = const Color(0xFF1A1C2E);
   final Color auroraTeal = const Color(0xFF00D2D3);
 
   String temperature = "--";
-  String message = "Enter the temperature to see your sky recommendation.";
+  // Updated initial message to be simple and "good"
+  String message = "Waiting to discover your current sky atmosphere.";
   String auraTitle = "AWAITING DATA";
   String weatherIcon = "✨";
 
   @override
   void initState() {
     super.initState();
-    // Auto-shows input dialog on load
     Future.delayed(Duration.zero, () => _showTempDialog());
   }
 
@@ -30,24 +29,34 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
       if (temp <= 0) {
         weatherIcon = "❄️";
         auraTitle = "GLACIAL";
-        message = "It's freezing! Keep your inner fire burning. Perfect for cozy introspection and hot cocoa.";
+        message = "It's freezing! Keep your inner fire burning. Perfect for cozy introspection.";
       } else if (temp > 0 && temp <= 15) {
         weatherIcon = "☁️";
         auraTitle = "CRISP";
-        message = "A bit chilly. A fresh breeze for a fresh start. Great for a brisk walk to clear your head.";
+        message = "A bit chilly. A fresh breeze for a fresh start. Great for clearing your head.";
       } else if (temp > 15 && temp <= 25) {
         weatherIcon = "🍃";
         auraTitle = "BALANCED";
-        message = "Ideal conditions. Your mind is in its natural state. Perfect for productivity and flow.";
+        message = "Ideal conditions. Your mind is in its natural state. Perfect for flow.";
       } else if (temp > 25 && temp <= 35) {
         weatherIcon = "☀️";
         auraTitle = "RADIANT";
-        message = "The sun is high! Your energy is peaking. Share your warmth with others today.";
+        message = "The sun is high! Your energy is peaking. Share your warmth with others.";
       } else {
         weatherIcon = "🔥";
         auraTitle = "SCORCHING";
-        message = "It's intense out there. Stay hydrated and calm. Use this heat to fuel your passions quietly.";
+        message = "It's intense out there. Stay hydrated and calm.";
       }
+    });
+  }
+
+  // Helper to handle "No Entry" state
+  void _handleNoEntry() {
+    setState(() {
+      message = "No temperature entered. Enjoy your peaceful journey through the stars!";
+      auraTitle = "STAY CALM";
+      weatherIcon = "✨";
+      temperature = "--";
     });
   }
 
@@ -63,9 +72,21 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Colors.white10),
         ),
-        title: const Text(
-          "Current Temperature",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Current Temperature",
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            IconButton(
+              icon: const Icon(Icons.home_rounded, color: Colors.white38),
+              onPressed: () {
+                _handleNoEntry(); // Updates message
+                Navigator.pop(context);
+              },
+            )
+          ],
         ),
         content: TextField(
           controller: tempInputController,
@@ -81,6 +102,13 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              _handleNoEntry(); // Updates message
+              Navigator.pop(context);
+            },
+            child: const Text("CANCEL", style: TextStyle(color: Colors.white38)),
+          ),
           TextButton(
             onPressed: () {
               final int? val = int.tryParse(tempInputController.text);
@@ -117,20 +145,7 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Decorative background glow
-            Positioned(
-              top: 100,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: auroraTeal.withOpacity(0.15), blurRadius: 100, spreadRadius: 50)
-                  ],
-                ),
-              ),
-            ),
+            // REMOVED: The Gemini-style background glow container is gone
             
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -145,7 +160,6 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
                     style: TextStyle(fontSize: 14, color: auroraTeal, fontWeight: FontWeight.w900, letterSpacing: 4)),
                   const SizedBox(height: 40),
                   
-                  // Recommendation Insight Card
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(25),
@@ -160,7 +174,7 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
                           style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 2)),
                         const SizedBox(height: 15),
                         Text(
-                          message,
+                          message, // This now updates on Cancel/Home
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
                         ),
@@ -169,7 +183,6 @@ class _WeatherMoodPageState extends State<WeatherMoodPage> {
                   ),
                   const SizedBox(height: 50),
                   
-                  // RETURN TO HOME BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 55,
