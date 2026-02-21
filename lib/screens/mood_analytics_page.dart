@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart'; // Standard Flutter UI toolkit
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase database connection
+import 'package:firebase_auth/firebase_auth.dart'; // Firebase user authentication for IDs
 
 class MoodAnalyticsPage extends StatefulWidget {
   const MoodAnalyticsPage({super.key});
@@ -10,11 +10,17 @@ class MoodAnalyticsPage extends StatefulWidget {
 }
 
 class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
+  // -----------------------------------------------------------------------
+  // 1. CONSTANTS & STATE
+  // -----------------------------------------------------------------------
+  // Static color variables for a consistent "Space/Dark" theme
   static const Color spaceDark = Color.fromARGB(255, 26, 28, 46);
   static const Color auroraTeal = Color(0xFF00D2D3);
   
+  // Track which filter is active; default is "Week"
   String _selectedFilter = "Week";
 
+  // Maps text-based moods to a numerical score for math calculations
   final Map<String, int> moodValues = {
     "Sad": 1,
     "Down": 2,
@@ -23,122 +29,112 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
     "Excited": 5,
   };
 
+  // -----------------------------------------------------------------------
+  // 2. HELPER LOGIC (Data Processing)
+  // -----------------------------------------------------------------------
+  // Converts a numerical average (e.g., 3.7) back into a readable string
   String _getMoodFromValue(double value) {
     if (value <= 1.5) return "Sad";
     if (value <= 2.5) return "Down";
     if (value <= 3.5) return "Neutral";
     if (value <= 4.5) return "Happy";
-    return "Excited";
+    return "Excited"; // Any score above 4.5
   }
 
+  // Returns the correct emoji icon based on the mood name
+  String _getEmoji(String mood) {
+    switch (mood) {
+      case "Sad": return "😔";
+      case "Down": return "☁️";
+      case "Happy": return "😊";
+      case "Excited": return "🤩";
+      default: return "😐"; // Default for Neutral
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // 3. MAIN BUILD INTERFACE
+  // -----------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    // Get the current logged-in user's unique ID from Firebase
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
 
     return Scaffold(
-      backgroundColor: spaceDark,
+      backgroundColor: spaceDark, // Sets the dark background
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: Colors.transparent, // Makes app bar blend in
+        elevation: 0, // Removes the shadow
         centerTitle: true,
         title: const Text("MOOD ANALYSIS", 
           style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context), // Goes back to previous screen
         ),
       ),
+      // StreamBuilder listens to live changes in your Firestore database
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('nightly_reflections')
-            .where('userId', isEqualTo: userId)
-            .snapshots(),
+            .where('userId', isEqualTo: userId) // Only fetch logs for THIS user
+            .snapshots(), // Provides a real-time stream of data
         builder: (context, snapshot) {
+          // If data is still loading from the internet, show a loading spinner
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: auroraTeal));
           }
 
-          // Use data() and check for field existence to prevent "Bad State" error
+          // Convert database documents into a list; default to empty if null
           final docs = snapshot.data?.docs ?? [];
-          
-          double totalScore = 0;
-          int count = 0;
+          double totalScore = 0; // Cumulative mood score
+          int count = 0; // Total number of logs
+          // Keeps track of how many times each mood occurs
           Map<String, int> distribution = {"Sad": 0, "Down": 0, "Neutral": 0, "Happy": 0, "Excited": 0};
 
+          // LOOP: Process every reflection found in the database
           for (var doc in docs) {
             final data = doc.data() as Map<String, dynamic>;
-            
-            // --- FIX: Safely check if 'mood' exists ---
-            if (data.containsKey('mood')) {
+            if (data.containsKey('mood')) { // Safety check: ensure field exists
               String mood = data['mood'];
               if (distribution.containsKey(mood)) {
-                distribution[mood] = distribution[mood]! + 1;
-                totalScore += moodValues[mood] ?? 3;
-                count++;
+                distribution[mood] = distribution[mood]! + 1; // Increment count
+                totalScore += moodValues[mood] ?? 3; // Add score for math
+                count++; // Increase total sample size
               }
             }
           }
 
+          // Calculate average: if no logs, default to 3.0 (Neutral)
           double averageValue = count > 0 ? totalScore / count : 3.0;
           String averageMood = _getMoodFromValue(averageValue);
 
+          // Build the scrollable layout
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 25),
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: ["Week", "Month", "Year"].map((filter) {
-                    bool isSelected = _selectedFilter == filter;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = filter),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? auroraTeal : Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Text(filter, 
-                          style: TextStyle(color: isSelected ? spaceDark : Colors.white38, fontWeight: FontWeight.bold)),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                
+                // UI PART A: The horizontal filter buttons (Week/Month/Year)
+                _buildTimeFilters(),
 
                 const SizedBox(height: 30),
 
-                Container(
-                  padding: const EdgeInsets.all(25),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text("CURRENT AVERAGE AURA", 
-                        style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                      const SizedBox(height: 15),
-                      Text(_getEmoji(averageMood), style: const TextStyle(fontSize: 50)),
-                      const SizedBox(height: 10),
-                      Text(averageMood.toUpperCase(), 
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1)),
-                      const SizedBox(height: 5),
-                      Text("Based on $count logs this $_selectedFilter", 
-                        style: const TextStyle(color: Colors.white24, fontSize: 12)),
-                    ],
-                  ),
-                ),
+                // UI PART B: The big card showing the average emoji and mood
+                _buildAverageAuraCard(averageMood, count),
 
                 const SizedBox(height: 30),
+                
+                // UI PART C: The Bar Chart area
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text("STATISTICS", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 const SizedBox(height: 15),
+                // Pass the processed counts to the bar chart generator
                 _buildStatBars(distribution, count),
+                
                 const SizedBox(height: 40),
               ],
             ),
@@ -148,6 +144,62 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
     );
   }
 
+  // -----------------------------------------------------------------------
+  // 4. MODULAR UI COMPONENTS
+  // -----------------------------------------------------------------------
+
+  // Creates the "Week", "Month", "Year" selection chips
+  Widget _buildTimeFilters() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: ["Week", "Month", "Year"].map((filter) {
+        bool isSelected = _selectedFilter == filter; // Checks if this button is active
+        return GestureDetector(
+          onTap: () => setState(() => _selectedFilter = filter), // Updates state and UI
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200), // Smooth color transition
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+            decoration: BoxDecoration(
+              // Glows Teal if selected, stays dark if not
+              color: isSelected ? auroraTeal : Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text(filter, 
+              style: TextStyle(color: isSelected ? spaceDark : Colors.white38, fontWeight: FontWeight.bold)),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Creates the large "AURA" display card
+  Widget _buildAverageAuraCard(String averageMood, int count) {
+    return Container(
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.03), // Subtle transparent white
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.05)), // Thin border
+      ),
+      child: Column(
+        children: [
+          const Text("CURRENT AVERAGE AURA", 
+            style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2)),
+          const SizedBox(height: 15),
+          Text(_getEmoji(averageMood), style: const TextStyle(fontSize: 50)), // Huge Emoji
+          const SizedBox(height: 10),
+          Text(averageMood.toUpperCase(), 
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 1)),
+          const SizedBox(height: 5),
+          // Tells the user how many days of data they are looking at
+          Text("Based on $count logs this $_selectedFilter", 
+            style: const TextStyle(color: Colors.white24, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // Creates the percentage-based progress bars
   Widget _buildStatBars(Map<String, int> data, int total) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -156,25 +208,30 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
+        // Maps each mood entry in the dictionary to a row in the UI
         children: data.entries.map((e) {
+          // Calculate percentage width (e.g., 2 logs / 10 total = 0.2)
           double progress = total == 0 ? 0 : e.value / total;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
+                // Mood Label (Sad, Happy, etc.)
                 SizedBox(width: 60, child: Text(e.key, style: const TextStyle(color: Colors.white54, fontSize: 12))),
+                // The actual bar
                 Expanded(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
-                      value: progress,
+                      value: progress, // Fills the bar based on the calculated percentage
                       backgroundColor: Colors.white.withOpacity(0.05),
-                      color: auroraTeal,
+                      color: auroraTeal, // The bar color
                       minHeight: 8,
                     ),
                   ),
                 ),
                 const SizedBox(width: 15),
+                // Percentage Text (e.g., "20%")
                 Text("${(progress * 100).toInt()}%", 
                   style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
               ],
@@ -183,15 +240,5 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
         }).toList(),
       ),
     );
-  }
-
-  String _getEmoji(String mood) {
-    switch (mood) {
-      case "Sad": return "😔";
-      case "Down": return "☁️";
-      case "Happy": return "😊";
-      case "Excited": return "🤩";
-      default: return "😐";
-    }
   }
 }

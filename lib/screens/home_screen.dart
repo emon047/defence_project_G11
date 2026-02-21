@@ -1,25 +1,29 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
-import '../core/theme.dart';
-import 'add_memory_page.dart';
+import 'package:flutter/material.dart'; 
+import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:intl/intl.dart'; 
+import '../core/theme.dart'; 
+import 'add_memory_page.dart'; 
 import 'memory_page.dart'; 
-import 'mood_analytics_page.dart';
-import 'calm_mode_page.dart';
-import 'calendar_page.dart';
-import 'weather_mood_page.dart';
+import 'mood_analytics_page.dart'; 
+import 'calm_mode_page.dart'; 
+import 'calendar_page.dart'; 
+import 'weather_mood_page.dart'; 
 import 'profile_page.dart'; 
-import 'streak_history_page.dart';
+import 'streak_history_page.dart'; 
 import 'nightfall.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Color _getMoodColor(String? mood) {
+  // ----------------------------------------------------------------------
+  // 1. LOGIC & HELPERS (Streaks & Colors)
+  // ----------------------------------------------------------------------
+  
+  Color _getMoodColor(String? mood) { 
     switch (mood) {
       case 'Happy': return Colors.amber;
-      case 'Calm': return AppColors.auroraTeal; 
+      case 'Calm': return AppColors.auroraTeal;
       case 'Peaceful': return Colors.greenAccent;
       case 'Energetic': return Colors.orangeAccent;
       case 'Sad': return Colors.blueGrey;
@@ -30,6 +34,7 @@ class HomeScreen extends StatelessWidget {
 
   Map<String, int> calculateStreaks(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return {'current': 0, 'highest': 0};
+    
     List<DateTime> dates = docs
         .map((doc) {
           final data = doc.data() as Map<String, dynamic>;
@@ -38,6 +43,7 @@ class HomeScreen extends StatelessWidget {
         })
         .map((date) => DateTime(date.year, date.month, date.day))
         .toSet().toList();
+    
     dates.sort((a, b) => b.compareTo(a));
 
     int currentStreak = 0;
@@ -55,6 +61,7 @@ class HomeScreen extends StatelessWidget {
         }
       }
     }
+    
     int tempStreak = 1;
     maxStreak = 1;
     for (int i = 0; i < dates.length - 1; i++) {
@@ -69,6 +76,10 @@ class HomeScreen extends StatelessWidget {
     return {'current': currentStreak, 'highest': maxStreak};
   }
 
+  // ----------------------------------------------------------------------
+  // 2. MAIN BUILDER (The "Skeleton")
+  // ----------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -76,7 +87,7 @@ class HomeScreen extends StatelessWidget {
     final displayName = user?.email?.split('@')[0] ?? "Explorer";
 
     return Scaffold(
-      backgroundColor: AppColors.spaceDark, 
+      backgroundColor: AppColors.spaceDark,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('memories')
@@ -84,6 +95,7 @@ class HomeScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           List<QueryDocumentSnapshot> allMemories = snapshot.data?.docs ?? [];
+          
           allMemories.sort((a, b) {
             var aTime = (a.data() as Map)['timestamp'] as Timestamp?;
             var bTime = (b.data() as Map)['timestamp'] as Timestamp?;
@@ -97,9 +109,7 @@ class HomeScreen extends StatelessWidget {
 
           return Container(
             height: MediaQuery.of(context).size.height,
-            decoration: const BoxDecoration(
-              color: AppColors.spaceDark, 
-            ),
+            decoration: const BoxDecoration(color: AppColors.spaceDark),
             child: SafeArea(
               bottom: false,
               child: Padding(
@@ -107,26 +117,28 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: 15),
+                    // TOP: Header
                     _buildHeader(displayName, context),
                     const SizedBox(height: 20),
+                    
+                    // MIDDLE 1: The Streak Card
                     _buildHeroStreakCard(context, streakData['current']!, streakData['highest']!),
                     const SizedBox(height: 25),
                     
+                    // MIDDLE 2: The Grid of 6 Buttons
                     Expanded(
                       flex: 6,
                       child: GridView.count(
                         crossAxisCount: 2,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 1.35, 
+                        childAspectRatio: 1.35,
                         physics: const BouncingScrollPhysics(),
                         children: [
                           _bentoTile(context, "Calm Mode", "Find Peace", Icons.spa_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalmModePage()),
                           _bentoTile(context, "Analytics", "View Stats", Icons.insert_chart_rounded, Colors.white.withOpacity(0.05), Colors.orangeAccent, const MoodAnalyticsPage()),
-                          // 2. TIMELINE NOW LINKS TO THE CLASS IN NIGHTFALL.DART
                           _bentoTile(context, "Timeline", "Aura Logs", Icons.auto_stories_rounded, Colors.white.withOpacity(0.05), Colors.blueAccent, const TimelinePage()),
                           _bentoTile(context, "Sky Aura", "Weather", Icons.filter_drama_rounded, Colors.white.withOpacity(0.05), Colors.pinkAccent, const WeatherMoodPage()),
-                          // 3. UPDATED NIGHT FALL TO LINK TO NIGHTFALLPAGE
                           _bentoTile(context, "Night Fall", "Reflect", Icons.nights_stay_rounded, Colors.white.withOpacity(0.05), Colors.indigoAccent, const NightfallPage()),
                           _bentoTile(context, "Calendar", "History", Icons.calendar_month_rounded, Colors.white.withOpacity(0.05), AppColors.auroraTeal, const CalendarPage()),
                         ],
@@ -134,9 +146,10 @@ class HomeScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 10),
+                    // BOTTOM: Recent Aura Section
                     _buildSectionHeader(context, "Recent Aura", const MemoryPage()),
                     const SizedBox(height: 12),
-                    _buildRecentMemoriesList(recentThree), 
+                    _buildRecentMemoriesList(recentThree),
                     const SizedBox(height: 30),
                   ],
                 ),
@@ -147,12 +160,17 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddMemoryPage())),
-        backgroundColor: AppColors.auroraTeal, 
+        backgroundColor: AppColors.auroraTeal,
         child: const Icon(Icons.add_rounded, color: AppColors.spaceDark, size: 35),
       ),
     );
   }
 
+  // ----------------------------------------------------------------------
+  // 3. UI COMPONENTS (In Order of Appearance)
+  // ----------------------------------------------------------------------
+
+  // 3a. Header
   Widget _buildHeader(String name, BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -173,6 +191,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // 3b. Streak Card
   Widget _buildHeroStreakCard(BuildContext context, int current, int highest) {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StreakHistoryPage())),
@@ -207,20 +226,20 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // NOTE: page is not 'const' here to avoid expression errors
+  // 3c. Bento Tiles (The 6 buttons)
   Widget _bentoTile(BuildContext context, String title, String sub, IconData icon, Color bgColor, Color iconColor, Widget page) {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => page)),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: bgColor, 
+          color: bgColor,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5), 
+          border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(icon, color: iconColor, size: 30),
             Column(
@@ -236,6 +255,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // 3d. Section Header (Recent Aura + See All)
   Widget _buildSectionHeader(BuildContext context, String title, Widget page) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -249,6 +269,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // 3e. Recent Logs List
   Widget _buildRecentMemoriesList(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return const Text("No recent logs.", style: TextStyle(color: Colors.white38));
     return SizedBox(
