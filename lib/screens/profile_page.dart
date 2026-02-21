@@ -143,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 SwitchListTile(
                   title: const Text("Glassmorphism Effect", style: TextStyle(color: Colors.white70, fontSize: 14)),
                   value: _glassEffect,
-                  activeColor: AppColors.auroraTeal,
+                  activeThumbColor: AppColors.auroraTeal,
                   onChanged: (val) {
                     setModalState(() => _glassEffect = val);
                     setState(() => _glassEffect = val);
@@ -197,7 +197,7 @@ class _ProfilePageState extends State<ProfilePage> {
               style: TextStyle(color: Colors.black87, fontSize: 16, height: 1.5),
             ),
             SizedBox(height: 20),
-            Text("FINAL PROJECT // GROUP G11", style: TextStyle(color: Colors.black45, fontSize: 10, fontWeight: FontWeight.bold)),
+            Text("Project by - Emon, Sinthiha, Raisa", style: TextStyle(color: Colors.black45, fontSize: 10, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

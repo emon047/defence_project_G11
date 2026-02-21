@@ -11,7 +11,6 @@ import 'calendar_page.dart';
 import 'weather_mood_page.dart';
 import 'profile_page.dart'; 
 import 'streak_history_page.dart';
-// 1. IMPORT THE NEW MERGED FILE
 import 'nightfall.dart'; 
 
 class HomeScreen extends StatelessWidget {
