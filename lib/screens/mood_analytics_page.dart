@@ -121,11 +121,11 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
               children: [
                 const SizedBox(height: 20),
 
-                // UI PART A: The horizontal filter buttons (Week/Month/Year)
+                // UI PART A:buttons (Week/Month/Year)
                 _buildTimeFilters(),
 
                 const SizedBox(height: 30),
-                // UI PART B: The big card showing the average emoji and mood
+                // UI PART B: card showing the average emoji and mood
                 _buildAverageAuraCard(averageMood, count),
 
                 const SizedBox(height: 30),
@@ -151,7 +151,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
   }
 
   // 4. MODULAR UI COMPONENTS
-  // Creates the "Week", "Month", "Year" selection chips
+  //"Week", "Month", "Year" selection 
   Widget _buildTimeFilters() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -230,7 +230,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
-                // Mood Label (Sad, Happy...)
+                // Mood Label (Sad, Happy)
                 SizedBox(
                     width: 60,
                     child: Text(e.key,

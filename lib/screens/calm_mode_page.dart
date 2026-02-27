@@ -10,7 +10,7 @@ class CalmModePage extends StatefulWidget {
       _CalmModePageState(); 
 }
 
-// with SingleTickerProviderStateMixin allows the class to handle a single animation clock
+
 class _CalmModePageState extends State<CalmModePage>
     with SingleTickerProviderStateMixin {
       
@@ -72,7 +72,6 @@ class _CalmModePageState extends State<CalmModePage>
   }
 
   // 2. SESSION LOGIC & TIMERS
-
   void _startSession() {
     _controller.repeat();
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -110,7 +109,6 @@ class _CalmModePageState extends State<CalmModePage>
       body: Container(
         // Full screen container
         decoration: BoxDecoration(
-          // Subtle background glow
           gradient: RadialGradient(
             center: Alignment.center, 
             radius: 1.2, 
@@ -121,7 +119,6 @@ class _CalmModePageState extends State<CalmModePage>
           ),
         ),
         child: Stack(
-          // Layer elements on top of each other
           children: [
             // LAYER 1: Main Breathing UI
             Center(
@@ -188,7 +185,7 @@ class _CalmModePageState extends State<CalmModePage>
               ),
             ),
 
-            // LAYER 2: Close Button (Top Left)
+            // LAYER 2: Close Button 
             Positioned(
               top: 50,
               left: 20,
@@ -207,7 +204,6 @@ class _CalmModePageState extends State<CalmModePage>
   }
 
   // 4. HELPER UI COMPONENTS
-  // Creates the background echo circles that grow with the main circle
   Widget _breathingCircle(
       {required double opacity, required double scaleMultiplier}) {
     return Container(
@@ -222,7 +218,6 @@ class _CalmModePageState extends State<CalmModePage>
     );
   }
 
-  // Creates the full-screen dark overlay when session ends
   Widget _buildCompletionOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.8), 
