@@ -181,10 +181,32 @@ class _NightfallPageState extends State<NightfallPage> {
 //TIMELINE PAGE 
 class TimelinePage extends StatelessWidget {
   const TimelinePage({super.key});
+
+  //Fetch User Data 
+  Stream<QuerySnapshot> fetchUserEntries(String userId) {
+    return FirebaseFirestore.instance
+        .collection('nightly_reflections')
+        .where('userId', isEqualTo: userId)
+        .snapshots();
+  }
+
+  //Sort Docs Descending
+  List<QueryDocumentSnapshot> sortDocsLatestFirst(
+      List<QueryDocumentSnapshot> docs) {
+    final sorted = docs.toList()
+      ..sort((a, b) {
+        Timestamp t1 = a['timestamp'] ?? Timestamp.now();
+        Timestamp t2 = b['timestamp'] ?? Timestamp.now();
+        return t2.compareTo(t1);
+      });
+    return sorted;
+  }
+
+  //UI Construction
   @override
   Widget build(BuildContext context) {
-    // UI construction
     final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 26, 28, 46),
       appBar: AppBar(
@@ -197,91 +219,67 @@ class TimelinePage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          //Back button
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
 
-      //body of Timelinepage checks if user is logged in and fetch their data
       body: userId == null
           ? const Center(
-              child:
-                  Text("Please login", style: TextStyle(color: Colors.white)))
+              child: Text("Please login", style: TextStyle(color: Colors.white)))
           : StreamBuilder<QuerySnapshot>(
-              // 1. Fetching Stream
-              stream: FirebaseFirestore.instance
-                  .collection('nightly_reflections')
-                  .where('userId', isEqualTo: userId)
-                  .snapshots(),
+              stream: fetchUserEntries(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
+
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
                       child: Text("Your journey starts tonight.",
                           style: TextStyle(color: Colors.white38)));
                 }
 
-                // 2. Sorting Data (Latest on Top)
-                final docs = snapshot.data!.docs.toList()
-                  ..sort((a, b) {
-                    Timestamp t1 = a['timestamp'] ?? Timestamp.now();
-                    Timestamp t2 = b['timestamp'] ?? Timestamp.now();
-                    return t2.compareTo(t1);
-                  });
+                final docs = sortDocsLatestFirst(snapshot.data!.docs);
 
-                // 3. Rendering List Items
+                //UI Part: ListView Builder 
                 return ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    //Logic for building each individual card
-                    var data = docs[index].data() as Map<String, dynamic>;
-                    DateTime date =
-                        (data['timestamp'] as Timestamp?)?.toDate() ??
-                            DateTime.now();
-                    String mood = data['mood'] ?? "Neutral";
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final date =
+                        (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+                    final mood = data['mood'] ?? "Neutral";
+
+                    //Decide emoji
                     String emoji = "😐";
                     if (mood == "Sad") emoji = "😔";
                     if (mood == "Down") emoji = "☁️";
                     if (mood == "Happy") emoji = "😊";
-                    if (mood == "Excited") {
-                      emoji = "🤩";
-                    }
+                    if (mood == "Excited") emoji = "🤩";
 
                     return Container(
-                      // Wrapper for each card
                       margin: const EdgeInsets.only(bottom: 20),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        // Card styling
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(20),
                         border:
                             Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
                       child: Column(
-                        // Arrange content inside card vertically
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Card children
+                          //Date + Mood Row
                           Row(
-                            // Arrange date and mood chip horizontally
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Start Row children
                               Column(
-                                // Date column
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  //Start Date children
-                                  Text(
-                                      DateFormat('EEEE')
-                                          .format(date)
-                                          .toUpperCase(),
+                                  Text(DateFormat('EEEE').format(date).toUpperCase(),
                                       style: const TextStyle(
                                           color: AppColors.auroraTeal,
                                           fontSize: 10,
@@ -292,11 +290,9 @@ class TimelinePage extends StatelessWidget {
                                 ],
                               ),
                               Container(
-                                //The mood chip/badge
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  //Badge background
                                   color: Colors.white.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -318,9 +314,7 @@ class TimelinePage extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(data['highlight'] ?? "...",
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  height: 1.4)),
+                                  color: Colors.white, fontSize: 15, height: 1.4)),
                         ],
                       ),
                     );

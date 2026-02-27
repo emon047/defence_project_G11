@@ -74,7 +74,7 @@ class _CalmModePageState extends State<CalmModePage>
   // 2. SESSION LOGIC & TIMERS
 
   void _startSession() {
-    _controller.repeat(); // Make the breathing animation loop forever
+    _controller.repeat();
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return; 
       setState(() {
@@ -207,8 +207,7 @@ class _CalmModePageState extends State<CalmModePage>
   }
 
   // 4. HELPER UI COMPONENTS
-
-  // Creates the background "echo" circles that grow with the main circle
+  // Creates the background echo circles that grow with the main circle
   Widget _breathingCircle(
       {required double opacity, required double scaleMultiplier}) {
     return Container(

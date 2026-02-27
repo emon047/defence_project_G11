@@ -179,7 +179,7 @@ class _MoodAnalyticsPageState extends State<MoodAnalyticsPage> {
     );
   }
 
-  //large "AURA" display card
+  //large AURA display card
   Widget _buildAverageAuraCard(String averageMood, int count) {
     return Container(
       padding: const EdgeInsets.all(25),
